@@ -1,0 +1,33 @@
+{
+  "name": "talent-portafolio-main",
+  "version": "1.0.0",
+  "description": "Prototipo interactivo de gestión de portafolio de acciones. Dark theme con acentos neón verde lima y cian.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "convex:dev": "convex dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gavemaxi9-stack/lab-finanzas.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/gavemaxi9-stack/lab-finanzas/issues"
+  },
+  "homepage": "https://github.com/gavemaxi9-stack/lab-finanzas#readme",
+  "dependencies": {
+    "convex": "^1.43.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.5",
+    "vite": "^8.2.1"
+  }
+}

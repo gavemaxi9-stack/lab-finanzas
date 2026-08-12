@@ -262,6 +262,39 @@ input:focus { outline: none; }
   text-shadow: none;
 }
 
+.live-indicator {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--lime);
+  box-shadow: 0 0 8px var(--lime-glow);
+}
+.live-indicator.stale .live-dot {
+  background: var(--rose);
+  box-shadow: 0 0 8px var(--rose-glow);
+}
+.live-indicator.stale { color: var(--rose); }
+
+.sample-data-banner {
+  margin: 4px 0 12px;
+  padding: 8px 14px;
+  border: 1px dashed var(--rose);
+  border-radius: var(--r-sm);
+  background: rgba(255, 77, 122, 0.08);
+  color: var(--rose);
+  font-size: 12px;
+  font-family: var(--font-mono);
+}
+
 .btn-add {
   margin-top: 28px;
   display: inline-flex;

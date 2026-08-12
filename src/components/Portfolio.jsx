@@ -1,5 +1,9 @@
 // AVANT MARKETS — Mi Portafolio screen
 
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { fmtMoney, fmtSigned, fmtPct, sparkPath } from "../lib/format.js";
+
 // Donut chart for sector distribution
 function Donut({ slices }) {
   // slices: [{ pct, color }]
@@ -34,13 +38,12 @@ function Donut({ slices }) {
         fontWeight="500"
         fontSize="22"
         fill="#fff">
-        8
+        {slices.length}
       </text>
       <text x={cx} y={cy + 14} textAnchor="middle"
         fontFamily="Manrope, sans-serif"
         fontSize="9"
         letterSpacing="0.16em"
-        textTransform="uppercase"
         fill="rgba(255,255,255,0.5)">
         ACTIVOS
       </text>
@@ -57,12 +60,52 @@ function Sparkline({ values, positive }) {
   );
 }
 
-function Portfolio({ onOpenTicker }) {
-  const data = buildPortfolio();
+function csvField(value) {
+  const s = String(value);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function exportHoldingsCsv(holdings) {
+  const header = ["Ticker", "Empresa", "Cantidad", "Precio prom.", "Precio actual", "Valor", "G/P total", "G/P %", "Peso %"];
+  const rows = holdings.map((h) => [
+    h.ticker,
+    h.info.name,
+    h.qty,
+    h.avgCost.toFixed(2),
+    h.info.price.toFixed(2),
+    h.value.toFixed(2),
+    h.pl.toFixed(2),
+    h.plPct.toFixed(2),
+    h.weight.toFixed(2),
+  ]);
+  const csv = [header, ...rows].map((r) => r.map(csvField).join(",")).join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `portafolio-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export default function Portfolio({ onOpenTicker, onViewMarket }) {
+  const summary = useQuery(api.portfolio.getSummary);
+  const holdingsData = useQuery(api.portfolio.getHoldings);
+  const activity = useQuery(api.activity.listRecent);
+  const tickers = useQuery(api.tickers.list);
+
+  if (!summary || !holdingsData || !activity || !tickers) {
+    return <div className="screen"><div className="card">Cargando portafolio…</div></div>;
+  }
+
+  const { holdings, computedTotal } = holdingsData;
 
   // Sector distribution
   const sectorMap = {};
-  data.holdings.forEach(h => {
+  holdings.forEach(h => {
     const s = h.info.sector;
     sectorMap[s] = (sectorMap[s] || 0) + h.value;
   });
@@ -73,7 +116,7 @@ function Portfolio({ onOpenTicker }) {
     .sort((a, b) => b.pct - a.pct);
 
   // Top movers across the market (all tickers)
-  const movers = Object.values(TICKERS)
+  const movers = tickers
     .slice()
     .sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct))
     .slice(0, 6);
@@ -85,28 +128,28 @@ function Portfolio({ onOpenTicker }) {
         <div className="card summary-card">
           <div className="summary-label">Valor total del portafolio</div>
           <div className="summary-value">
-            {fmtMoney(data.computedTotal)}
+            {fmtMoney(computedTotal)}
             <span className="currency">USD</span>
           </div>
           <div className="summary-deltas">
             <div className="delta">
               <span className="delta-label">Hoy</span>
-              <span className={"delta-value" + (data.todayChange >= 0 ? "" : " neg")}>
-                <span>{data.todayChange >= 0 ? "▲" : "▼"}</span>
-                {fmtSigned(data.todayChange)} USD ({fmtPct(data.todayChangePct)})
+              <span className={"delta-value" + (summary.todayChange >= 0 ? "" : " neg")}>
+                <span>{summary.todayChange >= 0 ? "▲" : "▼"}</span>
+                {fmtSigned(summary.todayChange)} USD ({fmtPct(summary.todayChangePct)})
               </span>
             </div>
             <div className="delta">
               <span className="delta-label">Rendimiento total</span>
-              <span className={"delta-value" + (data.allTimeReturn >= 0 ? "" : " neg")}>
-                <span>{data.allTimeReturn >= 0 ? "▲" : "▼"}</span>
-                {fmtSigned(data.allTimeReturn)} USD ({fmtPct(data.allTimeReturnPct)})
+              <span className={"delta-value" + (summary.allTimeReturn >= 0 ? "" : " neg")}>
+                <span>{summary.allTimeReturn >= 0 ? "▲" : "▼"}</span>
+                {fmtSigned(summary.allTimeReturn)} USD ({fmtPct(summary.allTimeReturnPct)})
               </span>
             </div>
             <div className="delta">
               <span className="delta-label">Efectivo disponible</span>
               <span className="delta-value" style={{ color: "#fff", textShadow: "none" }}>
-                {fmtMoney(data.cashAvailable)} USD
+                {fmtMoney(summary.cashAvailable)} USD
               </span>
             </div>
           </div>
@@ -133,7 +176,7 @@ function Portfolio({ onOpenTicker }) {
       <div className="card holdings-card">
         <div className="holdings-head">
           <h2 className="section-title">Mis posiciones</h2>
-          <a className="section-link" href="#">Exportar CSV</a>
+          <button className="section-link" onClick={() => exportHoldingsCsv(holdings)}>Exportar CSV</button>
         </div>
         <table className="table">
           <thead>
@@ -150,7 +193,7 @@ function Portfolio({ onOpenTicker }) {
             </tr>
           </thead>
           <tbody>
-            {data.holdings.map(h => {
+            {holdings.map(h => {
               const pos = h.pl >= 0;
               const todayPos = h.info.change >= 0;
               return (
@@ -199,8 +242,7 @@ function Portfolio({ onOpenTicker }) {
             <a className="section-link" href="#">Historial</a>
           </div>
           <div>
-            {ACTIVITY.map((a, i) => {
-              const t = TICKERS[a.ticker];
+            {activity.map((a) => {
               let title, amount, sub;
               if (a.type === "buy") {
                 title = `Compra · ${a.ticker}`;
@@ -216,7 +258,7 @@ function Portfolio({ onOpenTicker }) {
                 amount = `+${fmtMoney(a.amount)} USD`;
               }
               return (
-                <div className="activity-row" key={i}>
+                <div className="activity-row" key={a._id}>
                   <div className="activity-left">
                     <div className={"activity-badge " + a.type}>
                       {a.type === "buy" ? "BUY" : a.type === "sell" ? "SELL" : "DIV"}
@@ -239,7 +281,7 @@ function Portfolio({ onOpenTicker }) {
         <div className="card">
           <div className="section-head" style={{ margin: "0 0 8px" }}>
             <h2 className="section-title">Mayores movimientos</h2>
-            <a className="section-link" href="#">Ver mercado</a>
+            <button className="section-link" onClick={onViewMarket}>Ver mercado</button>
           </div>
           <div className="movers-list">
             {movers.map(m => {
@@ -266,5 +308,3 @@ function Portfolio({ onOpenTicker }) {
     </div>
   );
 }
-
-Object.assign(window, { Portfolio });

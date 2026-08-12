@@ -1,9 +1,63 @@
 // AVANT MARKETS — Ticker Detail screen
 
-const { useState: useStateD, useMemo, useRef, useEffect } = React;
+import { useEffect, useState } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { fmtMoney, fmtSigned, fmtPct } from "../lib/format.js";
+
+const STALE_AFTER_MS = 2 * 60 * 1000;
+
+// ─── "en vivo" / última actualización indicator ─────────
+function LiveIndicator({ updatedAt }) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (!updatedAt) return null;
+
+  const secondsAgo = Math.max(0, Math.round((now - updatedAt) / 1000));
+  const stale = now - updatedAt > STALE_AFTER_MS;
+
+  return (
+    <div className={"live-indicator" + (stale ? " stale" : "")}>
+      <span className="live-dot" />
+      {stale ? "Desactualizado" : "En vivo"} · hace {secondsAgo}s
+    </div>
+  );
+}
+
+// Cadencia del cron de precios en vivo (convex/crons.ts) — usada para ubicar
+// en el tiempo los puntos intradía de 1H/4H sin tener que guardar un
+// timestamp por punto.
+const LIVE_QUOTE_INTERVAL_MS = 20_000;
+
+// Genera etiquetas del eje X acordes al dato real de cada pestaña, en vez de
+// un horario de sesión fijo: 1H/4H son ticks intradía reales espaciados
+// LIVE_QUOTE_INTERVAL_MS entre sí; 1D/1S son cierres diarios reales (un punto
+// por día de mercado), así que se etiquetan en días, no en horas.
+function buildXLabels(timeframe, length) {
+  if (length < 2) return [];
+  const count = Math.min(6, length);
+  const isIntraday = timeframe === "1H" || timeframe === "4H";
+  const now = Date.now();
+
+  return Array.from({ length: count }, (_, i) => {
+    const pointIndex = Math.round(((length - 1) * i) / (count - 1));
+    const pointsAgo = length - 1 - pointIndex;
+
+    if (isIntraday) {
+      const t = new Date(now - pointsAgo * LIVE_QUOTE_INTERVAL_MS);
+      return t.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+    }
+    return pointsAgo === 0 ? "Hoy" : `-${pointsAgo}d`;
+  });
+}
 
 // ─── price chart ───────────────────────────────────────
-function PriceChart({ data, animate }) {
+function PriceChart({ data, animate, timeframe }) {
   const W = 700;
   const H = 380;
   const padL = 28;
@@ -35,7 +89,6 @@ function PriceChart({ data, animate }) {
 
   const lastX = padL + (data.length - 1) * step;
   const [, lastY] = xy(data.length - 1, data[data.length - 1]);
-  const firstY = padT + usableH;
   const fillPath = `${linePath} L ${lastX.toFixed(2)} ${(padT + usableH).toFixed(2)} L ${padL} ${(padT + usableH).toFixed(2)} Z`;
 
   // Y axis labels — 5 evenly spaced
@@ -46,8 +99,7 @@ function PriceChart({ data, animate }) {
     yTicks.push({ v, y });
   }
 
-  // X axis times (mocked but plausible session times)
-  const xLabels = ["09:30", "11:00", "12:30", "14:00", "15:30", "16:00"];
+  const xLabels = buildXLabels(timeframe, data.length);
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="chart-svg" preserveAspectRatio="none">
@@ -116,14 +168,18 @@ function NewsImagePlaceholder({ hue, label }) {
 }
 
 // ─── ticker detail screen ───────────────────────────────
-function TickerDetail({ tickerKey, inPortfolio, onToggleAdd }) {
-  const t = TICKERS[tickerKey];
-  const [timeframe, setTimeframe] = useStateD("1D");
+export default function TickerDetail({ tickerKey, inPortfolio, onToggleAdd }) {
+  const [timeframe, setTimeframe] = useState("1D");
+
+  const t = useQuery(api.tickers.get, { ticker: tickerKey });
+  const news = useQuery(api.news.byTicker, { ticker: tickerKey });
+
+  if (!t || !news) {
+    return <div className="screen"><div className="card">Cargando ticker…</div></div>;
+  }
+
   const series = t.series[timeframe];
   const positive = t.change >= 0;
-
-  // Build news for this ticker; fall back to NVRA news for others (just example data)
-  const news = NEWS_BY_TICKER[tickerKey] || NEWS_BY_TICKER.NVRA;
 
   // Force chart re-mount on timeframe change for redraw animation
   const chartKey = `${tickerKey}-${timeframe}`;
@@ -158,6 +214,7 @@ function TickerDetail({ tickerKey, inPortfolio, onToggleAdd }) {
             <span>{fmtSigned(t.change)} ({fmtPct(t.changePct)})</span>
             <span className="price-change-period">Hoy</span>
           </div>
+          <LiveIndicator updatedAt={t.updatedAt} />
           <div>
             <button
               className={"btn-add" + (inPortfolio ? " added" : "")}
@@ -188,7 +245,12 @@ function TickerDetail({ tickerKey, inPortfolio, onToggleAdd }) {
               </button>
             ))}
           </div>
-          <PriceChart key={chartKey} data={series} animate />
+          {!t.seriesUpdatedAt?.[timeframe] && (
+            <div className="sample-data-banner">
+              ⚠ Datos de muestra — histórico real no disponible todavía para {timeframe}
+            </div>
+          )}
+          <PriceChart key={chartKey} data={series} animate timeframe={timeframe} />
         </div>
 
         <div className="card">
@@ -206,11 +268,18 @@ function TickerDetail({ tickerKey, inPortfolio, onToggleAdd }) {
       {/* News */}
       <div className="section-head">
         <h2 className="section-title">Noticias recientes</h2>
-        <a className="section-link" href="#">Ver todas</a>
+        <a
+          className="section-link"
+          href={`https://www.google.com/finance/quote/${t.ticker}:${t.exchange}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Ver todas
+        </a>
       </div>
       <div className="news-grid">
-        {news.map((n, i) => (
-          <article className="news-card" key={i}>
+        {news.map((n) => (
+          <article className="news-card" key={n._id}>
             <div className="news-img">
               <NewsImagePlaceholder hue={n.hue} label={`[ imagen · ${n.tag.toLowerCase()} ]`} />
             </div>
@@ -227,12 +296,10 @@ function TickerDetail({ tickerKey, inPortfolio, onToggleAdd }) {
       <div className="footer">
         <div>Los datos se muestran con fines informativos y no constituyen asesoramiento de inversión.</div>
         <div className="footer-right">
-          <div>Fuente: <span>Nasdaq</span></div>
-          <div>· <span>Datos en tiempo real</span></div>
+          <div>Fuente: <span>Finnhub</span></div>
+          <div>· <span>Precio actualizado cada 20s</span></div>
         </div>
       </div>
     </div>
   );
 }
-
-Object.assign(window, { TickerDetail });
