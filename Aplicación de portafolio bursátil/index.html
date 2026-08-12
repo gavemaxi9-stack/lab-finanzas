@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<style>body{margin:0}</style>
+</helmet>
+<div style="min-height:100vh;background:#f7f7f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+
+<sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;width:100%;align-items:stretch">
+
+<div style="width:240px;flex:none;background:#fff;border-right:1px solid #ececec;display:flex;flex-direction:column;padding:28px 18px;position:sticky;top:0;height:100vh;box-sizing:border-box">
+<div style="font-family:Georgia,serif;font-weight:800;font-size:19px;letter-spacing:-0.02em;color:#0a0a0a;padding:0 8px 28px">finvizio</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<button onClick="{{ goDashboard }}" style="{{ tabDashStyle }}">Portafolio</button>
+<button onClick="{{ goWatchlist }}" style="{{ tabWatchStyle }}">Watchlist</button>
+<button onClick="{{ goSearch }}" style="{{ tabSearchStyle }}">Buscar</button>
+<button onClick="{{ goHistory }}" style="{{ tabHistStyle }}">Historial</button>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-top:1px solid #ececec;margin-top:12px">
+<div style="width:30px;height:30px;border-radius:50%;background:#0a0a0a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex:none">U</div>
+<div style="flex:1;font-size:13px;font-weight:600;color:#0a0a0a">Mi cuenta</div>
+<span onClick="{{ logout }}" style="font-size:12px;color:#9a9aa1;cursor:pointer">Salir</span>
+</div>
+</div>
+
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;height:100vh;overflow:hidden">
+
+<sc-if value="{{ !showDetail }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:22px 40px;border-bottom:1px solid #ececec;flex:none">
+<div style="font-size:20px;font-weight:700;color:#0a0a0a">{{ pageTitle }}</div>
+<input value="{{ searchQuery }}" onChange="{{ setSearchQuery }}" onFocus="{{ goSearch }}" placeholder="Buscar ticker o empresa..." style="width:320px;padding:10px 14px;border:1px solid #e5e5e7;border-radius:10px;font-size:13px;outline:none;background:#fafafa" />
+</div>
+</sc-if>
+
+<sc-if value="{{ showDetail }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:10px;padding:22px 40px;border-bottom:1px solid #ececec;flex:none;font-size:13px;color:#9a9aa1">
+<span onClick="{{ detail.backClick }}" style="cursor:pointer;font-size:16px;color:#0a0a0a;margin-right:2px">←</span>
+<span>Mercados</span><span>›</span><span>{{ detail.stock.sector }}</span><span>›</span><span style="color:#0a0a0a">{{ detail.stock.name }}</span>
+</div>
+</sc-if>
+
+<div style="flex:1;overflow-y:auto;padding:32px 40px 48px">
+<div style="max-width:1100px;margin:0 auto">
+
+<sc-if value="{{ showDetail }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;gap:44px;align-items:flex-start">
+<div style="flex:2;min-width:0;display:flex;flex-direction:column;gap:24px">
+
+<div style="display:flex;align-items:flex-start;justify-content:space-between">
+<div style="min-width:0">
+<div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap">
+<h1 style="font-size:26px;margin:0;color:#0a0a0a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0">{{ detail.stock.name }}</h1>
+<span style="font-size:14px;color:#9a9aa1;font-weight:600;flex-shrink:0;white-space:nowrap">{{ detail.stock.symbol }}</span>
+<span onClick="{{ detail.toggleWatchClick }}" style="cursor:pointer;font-size:19px;color:{{ detail.starColor }}">★</span>
+</div>
+<div style="display:flex;gap:8px;margin-top:10px">
+<span style="font-size:11px;padding:3px 8px;border-radius:5px;background:#f2f2f4;color:#6b6b70;font-weight:600">{{ detail.stock.exchange }}</span>
+<span style="font-size:11px;padding:3px 8px;border-radius:5px;background:#f2f2f4;color:#6b6b70;font-weight:600">{{ detail.stock.sector }}</span>
+</div>
+</div>
+<div style="text-align:right;flex:none">
+<div style="font-size:30px;font-weight:700;color:#0a0a0a">{{ detail.priceStr }}</div>
+<div style="font-size:14px;font-weight:600;color:{{ detail.changeColor }};display:flex;align-items:center;gap:4px;justify-content:flex-end">
+<span style="display:inline-block;transform:rotate({{ detail.arrowRotate }})">↑</span>{{ detail.changeStr }}
+</div>
+</div>
+</div>
+
+<div style="display:flex;gap:6px">
+<button onClick="{{ detail.rangeClicks.r1H }}" style="{{ detail.rangeStyles.1H }}">1H</button>
+<button onClick="{{ detail.rangeClicks.r4H }}" style="{{ detail.rangeStyles.4H }}">4H</button>
+<button onClick="{{ detail.rangeClicks.r1D }}" style="{{ detail.rangeStyles.1D }}">1D</button>
+<button onClick="{{ detail.rangeClicks.r1S }}" style="{{ detail.rangeStyles.1S }}">1S</button>
+</div>
+
+<div style="position:relative;height:260px;padding-right:56px">
+<svg viewBox="0 0 600 200" preserveAspectRatio="none" style="width:100%;height:100%;display:block">
+<line x1="0" y1="50" x2="600" y2="50" stroke="#f0f0f1" stroke-width="1"></line>
+<line x1="0" y1="100" x2="600" y2="100" stroke="#f0f0f1" stroke-width="1"></line>
+<line x1="0" y1="150" x2="600" y2="150" stroke="#f0f0f1" stroke-width="1"></line>
+<polyline points="{{ detail.chartPoints }}" fill="none" stroke="{{ detail.lineColor }}" stroke-width="2"></polyline>
+</svg>
+<div style="position:absolute;top:0;right:0;bottom:0;width:56px">
+<sc-for list="{{ detail.gridLabels }}" as="gl" hint-placeholder-count="5">
+<div style="position:absolute;right:0;top:{{ gl.top }};font-size:10px;color:#b0b0b6;transform:translateY(-50%)">{{ gl.value }}</div>
+</sc-for>
+</div>
+</div>
+<div style="display:flex;justify-content:space-between;padding-right:56px">
+<sc-for list="{{ detail.xLabels }}" as="xl" hint-placeholder-count="5">
+<span style="font-size:10px;color:#b0b0b6">{{ xl }}</span>
+</sc-for>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;row-gap:20px;padding-top:8px;border-top:1px solid #ececec">
+<div><div style="font-size:11px;color:#9a9aa1;margin-bottom:4px">Capitalización</div><div style="font-size:16px;font-weight:700;color:#0a0a0a">{{ detail.stock.marketCapStr }}</div></div>
+<div><div style="font-size:11px;color:#9a9aa1;margin-bottom:4px">Volumen</div><div style="font-size:16px;font-weight:700;color:#0a0a0a">{{ detail.stock.volumeStr }}</div></div>
+<div><div style="font-size:11px;color:#9a9aa1;margin-bottom:4px">PER</div><div style="font-size:16px;font-weight:700;color:#0a0a0a">{{ detail.stock.perStr }}</div></div>
+<div><div style="font-size:11px;color:#9a9aa1;margin-bottom:4px">Dividendo (TTM)</div><div style="font-size:16px;font-weight:700;color:#0a0a0a">{{ detail.stock.dividendStr }}</div></div>
+<div><div style="font-size:11px;color:#9a9aa1;margin-bottom:4px">Rend. por dividendo</div><div style="font-size:16px;font-weight:700;color:#0a0a0a">{{ detail.stock.dividendYieldStr }}</div></div>
+<div><div style="font-size:11px;color:#9a9aa1;margin-bottom:4px">Beta (5A)</div><div style="font-size:16px;font-weight:700;color:#0a0a0a">{{ detail.stock.betaStr }}</div></div>
+<div><div style="font-size:11px;color:#9a9aa1;margin-bottom:4px">Máximo 52S</div><div style="font-size:16px;font-weight:700;color:#0a0a0a">{{ detail.stock.high52Str }}</div></div>
+<div><div style="font-size:11px;color:#9a9aa1;margin-bottom:4px">Mínimo 52S</div><div style="font-size:16px;font-weight:700;color:#0a0a0a">{{ detail.stock.low52Str }}</div></div>
+<div><div style="font-size:11px;color:#9a9aa1;margin-bottom:4px">Cotización previa</div><div style="font-size:16px;font-weight:700;color:#0a0a0a">{{ detail.stock.prevCloseStr }}</div></div>
+</div>
+
+<button onClick="{{ detail.buyClick }}" style="{{ detail.buyStyle }}">{{ detail.buyLabel }}</button>
+</div>
+
+<div style="flex:1;min-width:280px;max-width:320px;display:flex;flex-direction:column;gap:20px">
+<sc-if value="{{ detail.isOwned }}" hint-placeholder-val="{{ false }}">
+<div style="border:1px solid #ececec;border-radius:14px;padding:18px">
+<div style="font-size:12px;color:#9a9aa1;margin-bottom:10px">Tu posición</div>
+<div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px"><span style="color:#6b6b70">Acciones</span><span style="font-weight:700;color:#0a0a0a">{{ detail.holdingSharesStr }}</span></div>
+<div style="display:flex;justify-content:space-between;font-size:14px"><span style="color:#6b6b70">Valor</span><span style="font-weight:700;color:#0a0a0a">{{ detail.holdingValueStr }}</span></div>
+</div>
+</sc-if>
+<div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
+<div style="font-size:14px;font-weight:700;color:#0a0a0a">Noticias recientes</div>
+<div style="font-size:12px;color:#9a9aa1">Ver todas</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:16px">
+<sc-for list="{{ detail.news }}" as="n" hint-placeholder-count="3">
+<div style="display:flex;gap:12px">
+<div style="width:48px;height:48px;border-radius:8px;background:#f2f2f4;flex:none"></div>
+<div>
+<div style="font-size:10px;color:#9a9aa1;font-weight:700;letter-spacing:0.03em;margin-bottom:3px">{{ n.source }} · {{ n.time }}</div>
+<div style="font-size:13px;color:#0a0a0a;line-height:1.4">{{ n.headline }}</div>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ !showDetail }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:28px">
+
+<sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;gap:16px">
+<div style="flex:1;border:1px solid #ececec;border-radius:14px;padding:20px"><div style="font-size:12px;color:#9a9aa1;margin-bottom:8px">Valor total</div><div style="font-size:24px;font-weight:700;color:#0a0a0a">{{ totalValueStr }}</div></div>
+<div style="flex:1;border:1px solid #ececec;border-radius:14px;padding:20px"><div style="font-size:12px;color:#9a9aa1;margin-bottom:8px">Ganancia/Pérdida</div><div style="font-size:24px;font-weight:700;color:{{ totalGainColor }}">{{ totalGainStr }} ({{ totalGainPctStr }})</div></div>
+<div style="flex:1;border:1px solid #ececec;border-radius:14px;padding:20px"><div style="font-size:12px;color:#9a9aa1;margin-bottom:8px">Posiciones</div><div style="font-size:24px;font-weight:700;color:#0a0a0a">{{ portfolioCount }}</div></div>
+</div>
+
+<sc-if value="{{ hasPortfolio }}" hint-placeholder-val="{{ true }}">
+<table style="width:100%;border-collapse:collapse">
+<thead><tr>
+<th style="text-align:left;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Símbolo</th>
+<th style="text-align:left;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Nombre</th>
+<th style="text-align:right;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Acciones</th>
+<th style="text-align:right;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Precio</th>
+<th style="text-align:right;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Valor</th>
+<th style="text-align:right;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Ganancia</th>
+</tr></thead>
+<tbody>
+<sc-for list="{{ portfolioRows }}" as="row" hint-placeholder-count="4">
+<tr onClick="{{ row.open }}" style="cursor:pointer;border-bottom:1px solid #f0f0f1">
+<td style="padding:14px 0;font-size:14px;font-weight:700;color:#0a0a0a">{{ row.symbol }}</td>
+<td style="padding:14px 0;font-size:13px;color:#6b6b70">{{ row.name }}</td>
+<td style="padding:14px 0;font-size:13px;color:#6b6b70;text-align:right">{{ row.shares }}</td>
+<td style="padding:14px 0;font-size:13px;color:#6b6b70;text-align:right">{{ row.priceStr }}</td>
+<td style="padding:14px 0;font-size:14px;font-weight:600;color:#0a0a0a;text-align:right">{{ row.marketValueStr }}</td>
+<td style="padding:14px 0;font-size:13px;font-weight:600;text-align:right;color:{{ row.gainColor }}">{{ row.gainStr }} ({{ row.gainPctStr }})</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</sc-if>
+<sc-if value="{{ !hasPortfolio }}" hint-placeholder-val="{{ false }}">
+<div style="text-align:center;padding:48px 0;color:#9a9aa1;font-size:13px">Aún no tienes posiciones.<br /><span onClick="{{ goSearch }}" style="color:#0a0a0a;font-weight:600;cursor:pointer">Busca una acción para comenzar →</span></div>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{ isWatchlist }}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{ hasWatchlist }}" hint-placeholder-val="{{ true }}">
+<table style="width:100%;border-collapse:collapse">
+<thead><tr>
+<th style="text-align:left;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Símbolo</th>
+<th style="text-align:left;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Nombre</th>
+<th style="text-align:right;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Precio</th>
+<th style="text-align:right;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Cambio</th>
+<th style="border-bottom:1px solid #ececec"></th>
+</tr></thead>
+<tbody>
+<sc-for list="{{ watchlistRows }}" as="row" hint-placeholder-count="4">
+<tr onClick="{{ row.open }}" style="cursor:pointer;border-bottom:1px solid #f0f0f1">
+<td style="padding:14px 0;font-size:14px;font-weight:700;color:#0a0a0a">{{ row.symbol }}</td>
+<td style="padding:14px 0;font-size:13px;color:#6b6b70">{{ row.name }}</td>
+<td style="padding:14px 0;font-size:13px;color:#6b6b70;text-align:right">{{ row.priceStr }}</td>
+<td style="padding:14px 0;font-size:13px;font-weight:600;text-align:right;color:{{ row.changeColor }}">{{ row.changeStr }}</td>
+<td style="padding:14px 0;text-align:right"><span onClick="{{ row.remove }}" style="font-size:15px;color:#c7c7cc;cursor:pointer">×</span></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</sc-if>
+<sc-if value="{{ !hasWatchlist }}" hint-placeholder-val="{{ false }}">
+<div style="text-align:center;padding:48px 0;color:#9a9aa1;font-size:13px">Tu watchlist está vacía.<br /><span onClick="{{ goSearch }}" style="color:#0a0a0a;font-weight:600;cursor:pointer">Busca una acción para añadir →</span></div>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{ isSearch }}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{ hasSearchResults }}" hint-placeholder-val="{{ true }}">
+<table style="width:100%;border-collapse:collapse">
+<thead><tr>
+<th style="text-align:left;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Símbolo</th>
+<th style="text-align:left;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Nombre</th>
+<th style="text-align:left;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Bolsa</th>
+<th style="text-align:right;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Precio</th>
+<th style="text-align:right;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Cambio</th>
+</tr></thead>
+<tbody>
+<sc-for list="{{ searchRows }}" as="row" hint-placeholder-count="6">
+<tr onClick="{{ row.open }}" style="cursor:pointer;border-bottom:1px solid #f0f0f1">
+<td style="padding:14px 0;font-size:14px;font-weight:700;color:#0a0a0a">{{ row.symbol }}</td>
+<td style="padding:14px 0;font-size:13px;color:#6b6b70">{{ row.name }}</td>
+<td style="padding:14px 0;font-size:13px;color:#6b6b70">{{ row.exchange }}</td>
+<td style="padding:14px 0;font-size:13px;color:#6b6b70;text-align:right">{{ row.priceStr }}</td>
+<td style="padding:14px 0;font-size:13px;font-weight:600;text-align:right;color:{{ row.changeColor }}">{{ row.changeStr }}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</sc-if>
+<sc-if value="{{ !hasSearchResults }}" hint-placeholder-val="{{ false }}">
+<div style="text-align:center;padding:48px 0;color:#9a9aa1;font-size:13px">Sin resultados para tu búsqueda.</div>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{ isHistory }}" hint-placeholder-val="{{ false }}">
+<table style="width:100%;border-collapse:collapse">
+<thead><tr>
+<th style="text-align:left;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Fecha</th>
+<th style="text-align:left;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Tipo</th>
+<th style="text-align:left;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Símbolo</th>
+<th style="text-align:right;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Acciones</th>
+<th style="text-align:right;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Precio</th>
+<th style="text-align:right;font-size:11px;font-weight:700;color:#9a9aa1;text-transform:uppercase;letter-spacing:0.03em;padding-bottom:10px;border-bottom:1px solid #ececec">Total</th>
+</tr></thead>
+<tbody>
+<sc-for list="{{ txRows }}" as="row" hint-placeholder-count="5">
+<tr style="border-bottom:1px solid #f0f0f1">
+<td style="padding:14px 0;font-size:13px;color:#6b6b70">{{ row.date }}</td>
+<td style="padding:14px 0"><span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:5px;background:{{ row.badgeBg }};color:{{ row.badgeColor }}">{{ row.type }}</span></td>
+<td style="padding:14px 0;font-size:14px;font-weight:700;color:#0a0a0a">{{ row.symbol }}</td>
+<td style="padding:14px 0;font-size:13px;color:#6b6b70;text-align:right">{{ row.sharesStr }}</td>
+<td style="padding:14px 0;font-size:13px;color:#6b6b70;text-align:right">{{ row.priceStr }}</td>
+<td style="padding:14px 0;font-size:14px;font-weight:700;color:#0a0a0a;text-align:right">{{ row.totalStr }}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</sc-if>
+
+</div>
+</sc-if>
+
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;skipLogin&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;defaultTab&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;dashboard&quot;,&quot;options&quot;:[&quot;dashboard&quot;,&quot;watchlist&quot;,&quot;search&quot;,&quot;history&quot;],&quot;tsType&quot;:&quot;string&quot;},&quot;buyLotSize&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:5,&quot;min&quot;:1,&quot;max&quot;:20,&quot;step&quot;:1,&quot;unit&quot;:&quot;acc.&quot;,&quot;tsType&quot;:&quot;number&quot;}}">
+function hashStr(str){ let h=0; for(let i=0;i<str.length;i++){ h=(h<<5)-h+str.charCodeAt(i); h|=0; } return h>>>0; }
+function mulberry32(seed){ let a=seed>>>0; return function(){ a|=0; a=(a+0x6D2B79F5)|0; let t=Math.imul(a ^ a>>>15, 1 | a); t=(t + Math.imul(t ^ t>>>7, 61 | t)) ^ t; return ((t ^ t>>>14) >>> 0)/4294967296; }; }
+function genSeries(symbol, range, price, change){
+  const seed = hashStr(symbol+range);
+  const rnd = mulberry32(seed);
+  const n = 40;
+  const vol = range==='1H' ? price*0.003 : range==='4H' ? price*0.008 : range==='1D' ? price*0.015 : price*0.05;
+  const start = price - change;
+  let v = start;
+  const vals = [];
+  for (let i=0;i<n;i++){
+    const t = i/(n-1);
+    const target = start + (price-start)*t;
+    v = v + (target - v)*0.3 + (rnd()-0.5)*vol;
+    vals.push(v);
+  }
+  vals[n-1] = price;
+  return vals;
+}
+function buildLinePath(values, w, h){
+  const min = Math.min.apply(null, values), max = Math.max.apply(null, values);
+  const range = (max-min) || 1;
+  const n = values.length;
+  const pad = 8;
+  const points = values.map((v,i)=>{
+    const x = (i/(n-1))*w;
+    const y = pad + (1-(v-min)/range)*(h-pad*2);
+    return x.toFixed(1)+','+y.toFixed(1);
+  }).join(' ');
+  const gridLabels = [0,0.25,0.5,0.75,1].map(f=>({ top:(f*100).toFixed(0)+'%', value:(max-f*range).toFixed(2) }));
+  return { points, gridLabels };
+}
+function buildSpark(symbol, price, change){
+  const values = genSeries(symbol, '1D', price, change);
+  const built = buildLinePath(values, 100, 32);
+  return { points: built.points, color: change>=0 ? '#16a34a' : '#dc2626' };
+}
+function fmtMoney(n){ const sign = n<0?'-':''; return sign+'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtChange(change,pct){ return (change>=0?'+':'')+change.toFixed(2)+' ('+(pct>=0?'+':'')+pct.toFixed(2)+'%)'; }
+function sidebarBtnStyle(active){ return 'width:100%;text-align:left;border:none;display:flex;align-items:center;padding:10px 14px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;background:'+(active?'#f2f2f4':'transparent')+';color:'+(active?'#0a0a0a':'#6b6b70'); }
+function rangeBtnStyle(active){ return 'padding:6px 14px;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;background:'+(active?'#0a0a0a':'#f2f2f4')+';color:'+(active?'#fff':'#6b6b70'); }
+function buildNews(st){
+  const up = st.change>=0;
+  return [
+    { source:'BLOOMBERG', time:'2h', headline: st.name+' presenta nuevas funciones de IA en su conferencia anual' },
+    { source:'CNBC', time:'5h', headline: '¿Es momento de comprar acciones de '+st.name+' antes de resultados del próximo trimestre?' },
+    { source:'REUTERS', time: up?'8h':'6h', headline: up ? (st.name+' alcanza nuevo máximo impulsado por fuerte demanda') : (st.name+' cae tras revisión de perspectivas del sector') }
+  ];
+}
+const XLABELS = {
+  '1H': ['09:30','09:45','10:00','10:15','10:30'],
+  '4H': ['09:30','11:00','12:30','14:00','15:30'],
+  '1D': ['10:00','12:00','13:00','14:00','16:00'],
+  '1S': ['Lun','Mar','Mié','Jue','Vie']
+};
+const STOCKS = [
+  { symbol:'AAPL', name:'Apple Inc.', sector:'Tecnología', exchange:'NASDAQ', price:195.42, change:2.38, changePct:1.23, marketCapStr:'$3.02T', volumeStr:'48.72M', perStr:'29.11', dividendStr:'$0.96', dividendYieldStr:'0.49%', betaStr:'1.23', high52Str:'199.62', low52Str:'164.08', prevCloseStr:'193.04' },
+  { symbol:'TSLA', name:'Tesla Inc.', sector:'Automotriz', exchange:'NASDAQ', price:248.10, change:-3.20, changePct:-1.27, marketCapStr:'$790.5B', volumeStr:'92.14M', perStr:'68.40', dividendStr:'$0.00', dividendYieldStr:'0.00%', betaStr:'2.05', high52Str:'299.29', low52Str:'182.00', prevCloseStr:'251.30' },
+  { symbol:'NVDA', name:'NVIDIA Corp.', sector:'Tecnología', exchange:'NASDAQ', price:118.75, change:4.02, changePct:3.50, marketCapStr:'$2.91T', volumeStr:'210.55M', perStr:'48.90', dividendStr:'$0.16', dividendYieldStr:'0.13%', betaStr:'1.68', high52Str:'140.76', low52Str:'75.61', prevCloseStr:'114.73' },
+  { symbol:'MSFT', name:'Microsoft Corp.', sector:'Tecnología', exchange:'NASDAQ', price:412.30, change:1.15, changePct:0.28, marketCapStr:'$3.06T', volumeStr:'21.30M', perStr:'35.20', dividendStr:'$3.32', dividendYieldStr:'0.81%', betaStr:'0.91', high52Str:'430.82', low52Str:'362.90', prevCloseStr:'411.15' },
+  { symbol:'GOOGL', name:'Alphabet Inc.', sector:'Tecnología', exchange:'NASDAQ', price:172.88, change:0.94, changePct:0.55, marketCapStr:'$2.15T', volumeStr:'24.80M', perStr:'24.10', dividendStr:'$0.80', dividendYieldStr:'0.46%', betaStr:'1.04', high52Str:'185.20', low52Str:'130.67', prevCloseStr:'171.94' },
+  { symbol:'AMZN', name:'Amazon.com Inc.', sector:'Consumo', exchange:'NASDAQ', price:189.20, change:-1.10, changePct:-0.58, marketCapStr:'$1.98T', volumeStr:'35.60M', perStr:'40.75', dividendStr:'$0.00', dividendYieldStr:'0.00%', betaStr:'1.15', high52Str:'201.20', low52Str:'151.61', prevCloseStr:'190.30' },
+  { symbol:'META', name:'Meta Platforms', sector:'Tecnología', exchange:'NASDAQ', price:502.60, change:6.30, changePct:1.27, marketCapStr:'$1.28T', volumeStr:'14.90M', perStr:'27.60', dividendStr:'$2.00', dividendYieldStr:'0.40%', betaStr:'1.21', high52Str:'542.81', low52Str:'426.30', prevCloseStr:'496.30' },
+  { symbol:'NFLX', name:'Netflix Inc.', sector:'Entretenimiento', exchange:'NASDAQ', price:640.15, change:-2.40, changePct:-0.37, marketCapStr:'$275.4B', volumeStr:'3.85M', perStr:'42.30', dividendStr:'$0.00', dividendYieldStr:'0.00%', betaStr:'1.31', high52Str:'700.99', low52Str:'544.87', prevCloseStr:'642.55' },
+  { symbol:'AMD', name:'Advanced Micro Devices', sector:'Tecnología', exchange:'NASDAQ', price:158.90, change:2.10, changePct:1.34, marketCapStr:'$257.1B', volumeStr:'58.40M', perStr:'110.20', dividendStr:'$0.00', dividendYieldStr:'0.00%', betaStr:'1.72', high52Str:'227.30', low52Str:'93.12', prevCloseStr:'156.80' },
+  { symbol:'DIS', name:'Walt Disney Co.', sector:'Entretenimiento', exchange:'NYSE', price:112.40, change:0.55, changePct:0.49, marketCapStr:'$205.6B', volumeStr:'9.20M', perStr:'19.80', dividendStr:'$1.00', dividendYieldStr:'0.89%', betaStr:'1.18', high52Str:'123.74', low52Str:'83.91', prevCloseStr:'111.85' }
+];
+
+class Component extends DCLogic {
+  state = {
+    loggedIn: true,
+    activeTab: 'dashboard',
+    activeTicker: null,
+    chartRange: '1D',
+    searchQuery: '',
+    portfolio: [
+      { symbol:'AAPL', shares:10, avgCost:180.20 },
+      { symbol:'TSLA', shares:5, avgCost:210.00 },
+      { symbol:'NVDA', shares:8, avgCost:95.40 },
+      { symbol:'MSFT', shares:6, avgCost:340.10 }
+    ],
+    watchlist: ['GOOGL','AMZN','META','NFLX'],
+    transactions: [
+      { id:1, date:'10 ago 2026', type:'Compra', symbol:'NVDA', shares:8, price:95.40 },
+      { id:2, date:'05 ago 2026', type:'Venta', symbol:'AMD', shares:12, price:151.20 },
+      { id:3, date:'28 jul 2026', type:'Compra', symbol:'MSFT', shares:6, price:340.10 },
+      { id:4, date:'15 jul 2026', type:'Compra', symbol:'TSLA', shares:5, price:210.00 },
+      { id:5, date:'02 jul 2026', type:'Compra', symbol:'AAPL', shares:10, price:180.20 }
+    ],
+    nextTxId: 6
+  };
+
+  componentDidMount() {
+    const patch = {};
+    if (this.props.skipLogin) patch.loggedIn = true;
+    if (this.props.defaultTab) patch.activeTab = this.props.defaultTab;
+    if (Object.keys(patch).length) this.setState(patch);
+  }
+
+  login = (e) => { e.preventDefault(); this.setState({ loggedIn: true }); };
+  logout = () => this.setState({ loggedIn:false, activeTab:'dashboard', activeTicker:null });
+  setTab = (tab) => this.setState({ activeTab: tab, activeTicker: null });
+  goDashboard = () => this.setTab('dashboard');
+  goWatchlist = () => this.setTab('watchlist');
+  goSearch = () => this.setTab('search');
+  goHistory = () => this.setTab('history');
+  openDetail = (symbol) => this.setState({ activeTicker: symbol });
+  closeDetail = () => this.setState({ activeTicker: null });
+  setChartRange = (r) => this.setState({ chartRange: r });
+  setSearchQuery = (e) => this.setState({ searchQuery: e.target.value });
+  toggleWatch = (symbol) => this.setState(s => ({ watchlist: s.watchlist.includes(symbol) ? s.watchlist.filter(x=>x!==symbol) : [...s.watchlist, symbol] }));
+
+  tradeStock = (symbol) => {
+    const lot = this.props.buyLotSize ?? 5;
+    const stock = STOCKS.find(s=>s.symbol===symbol);
+    this.setState(s => {
+      const idx = s.portfolio.findIndex(h=>h.symbol===symbol);
+      let portfolio = s.portfolio.slice();
+      let txType, txShares;
+      if (idx === -1) {
+        portfolio.push({ symbol, shares: lot, avgCost: stock.price });
+        txType = 'Compra'; txShares = lot;
+      } else {
+        const h = portfolio[idx];
+        if (h.shares > lot) {
+          portfolio[idx] = { ...h, shares: h.shares - lot };
+          txType = 'Venta'; txShares = lot;
+        } else {
+          txShares = h.shares;
+          portfolio.splice(idx,1);
+          txType = 'Venta';
+        }
+      }
+      const tx = { id: s.nextTxId, date:'Hoy', type: txType, symbol, shares: txShares, price: stock.price };
+      return { portfolio, transactions: [tx, ...s.transactions], nextTxId: s.nextTxId+1 };
+    });
+  };
+
+  renderVals() {
+    const s = this.state;
+    const byId = (sym) => STOCKS.find(x=>x.symbol===sym);
+
+    const portfolioRows = s.portfolio.map(h => {
+      const st = byId(h.symbol);
+      const marketValue = st.price*h.shares, costBasis = h.avgCost*h.shares;
+      const gain = marketValue-costBasis, gainPct = costBasis ? gain/costBasis*100 : 0;
+      const spark = buildSpark(st.symbol, st.price, st.change);
+      return {
+        symbol:h.symbol, name:st.name, shares:h.shares,
+        priceStr: fmtMoney(st.price),
+        sparkPoints: spark.points, sparkColor: spark.color,
+        marketValueStr: fmtMoney(marketValue),
+        gainStr: (gain>=0?'+':'')+fmtMoney(gain),
+        gainPctStr: (gainPct>=0?'+':'')+gainPct.toFixed(2)+'%',
+        gainColor: gain>=0?'#16a34a':'#dc2626',
+        open: () => this.openDetail(h.symbol)
+      };
+    });
+    const totalValue = s.portfolio.reduce((a,h)=>a+h.shares*byId(h.symbol).price,0);
+    const totalCost = s.portfolio.reduce((a,h)=>a+h.shares*h.avgCost,0);
+    const totalGain = totalValue-totalCost;
+    const totalGainPct = totalCost ? totalGain/totalCost*100 : 0;
+
+    const watchlistRows = s.watchlist.map(sym => {
+      const st = byId(sym);
+      return {
+        symbol:sym, name:st.name,
+        priceStr: fmtMoney(st.price),
+        changeStr: fmtChange(st.change, st.changePct),
+        changeColor: st.change>=0?'#16a34a':'#dc2626',
+        open: () => this.openDetail(sym),
+        remove: (e) => { e.stopPropagation(); this.toggleWatch(sym); }
+      };
+    });
+
+    const q = s.searchQuery.trim().toLowerCase();
+    const searchRows = STOCKS.filter(st => !q || st.symbol.toLowerCase().includes(q) || st.name.toLowerCase().includes(q)).map(st => ({
+      symbol:st.symbol, name:st.name, exchange:st.exchange,
+      priceStr: fmtMoney(st.price),
+      changeStr: fmtChange(st.change, st.changePct),
+      changeColor: st.change>=0?'#16a34a':'#dc2626',
+      open: () => this.openDetail(st.symbol)
+    }));
+
+    const txRows = s.transactions.map(t => {
+      return {
+        id:t.id, date:t.date, type:t.type, symbol:t.symbol,
+        sharesStr: t.shares+' acc.',
+        priceStr: fmtMoney(t.price),
+        totalStr: fmtMoney(t.shares*t.price),
+        badgeBg: t.type==='Compra' ? '#e8f5ec' : '#fdecec',
+        badgeColor: t.type==='Compra' ? '#16a34a' : '#dc2626'
+      };
+    });
+
+    let detail = null;
+    if (s.activeTicker) {
+      const st = byId(s.activeTicker);
+      const values = genSeries(st.symbol, s.chartRange, st.price, st.change);
+      const built = buildLinePath(values, 600, 200);
+      const holding = s.portfolio.find(h=>h.symbol===st.symbol);
+      const isOwned = !!holding;
+      const isWatched = s.watchlist.includes(st.symbol);
+      const lot = this.props.buyLotSize ?? 5;
+      const trendUp = values[values.length-1] >= values[0];
+      detail = {
+        stock: st,
+        priceStr: fmtMoney(st.price),
+        changeStr: fmtChange(st.change, st.changePct),
+        changeColor: st.change>=0?'#16a34a':'#dc2626',
+        arrowRotate: st.change>=0 ? '0deg' : '180deg',
+        chartPoints: built.points,
+        gridLabels: built.gridLabels,
+        lineColor: trendUp ? '#16a34a' : '#dc2626',
+        xLabels: XLABELS[s.chartRange],
+        isOwned, isWatched,
+        holdingSharesStr: isOwned ? (holding.shares+' acc.') : '',
+        holdingValueStr: isOwned ? fmtMoney(holding.shares*st.price) : '',
+        starColor: isWatched ? '#f5b400' : '#c7c7cc',
+        toggleWatchClick: () => this.toggleWatch(st.symbol),
+        backClick: this.closeDetail,
+        buyClick: () => this.tradeStock(st.symbol),
+        buyLabel: isOwned ? ('Vender '+Math.min(lot, holding.shares)+' acciones') : ('Añadir a mi portafolio ('+lot+')'),
+        buyStyle: isOwned
+          ? 'padding:14px 28px;border-radius:12px;border:1px solid #d4d4d8;background:#fff;color:#0a0a0a;font-size:14px;font-weight:600;cursor:pointer;align-self:flex-start'
+          : 'padding:14px 28px;border-radius:12px;border:none;background:#0a0a0a;color:#fff;font-size:14px;font-weight:600;cursor:pointer;align-self:flex-start',
+        news: buildNews(st),
+        rangeClicks: {
+          r1H: () => this.setChartRange('1H'), r4H: () => this.setChartRange('4H'),
+          r1D: () => this.setChartRange('1D'), r1S: () => this.setChartRange('1S')
+        },
+        rangeStyles: {
+          '1H': rangeBtnStyle(s.chartRange==='1H'), '4H': rangeBtnStyle(s.chartRange==='4H'),
+          '1D': rangeBtnStyle(s.chartRange==='1D'), '1S': rangeBtnStyle(s.chartRange==='1S')
+        }
+      };
+    }
+
+    const pageTitle = s.activeTab==='dashboard' ? 'Portafolio' : s.activeTab==='watchlist' ? 'Watchlist' : s.activeTab==='search' ? 'Buscar acciones' : 'Historial de operaciones';
+
+    return {
+      loggedIn: s.loggedIn, showDetail: !!s.activeTicker, pageTitle,
+      isDashboard: s.activeTab==='dashboard', isWatchlist: s.activeTab==='watchlist',
+      isSearch: s.activeTab==='search', isHistory: s.activeTab==='history',
+      login: this.login, logout: this.logout,
+      searchQuery: s.searchQuery, setSearchQuery: this.setSearchQuery, goSearch: this.goSearch,
+      goDashboard: this.goDashboard, goWatchlist: this.goWatchlist, goHistory: this.goHistory,
+      tabDashStyle: sidebarBtnStyle(s.activeTab==='dashboard'), tabWatchStyle: sidebarBtnStyle(s.activeTab==='watchlist'),
+      tabSearchStyle: sidebarBtnStyle(s.activeTab==='search'), tabHistStyle: sidebarBtnStyle(s.activeTab==='history'),
+      portfolioRows, portfolioCount: portfolioRows.length,
+      totalValueStr: fmtMoney(totalValue),
+      totalGainStr: (totalGain>=0?'+':'')+fmtMoney(totalGain),
+      totalGainPctStr: (totalGainPct>=0?'+':'')+totalGainPct.toFixed(2)+'%',
+      totalGainColor: totalGain>=0?'#16a34a':'#dc2626',
+      hasPortfolio: portfolioRows.length>0,
+      watchlistRows, hasWatchlist: watchlistRows.length>0,
+      searchRows, hasSearchResults: searchRows.length>0,
+      txRows,
+      detail
+    };
+  }
+}
+</script>
+</body>
+</html>
